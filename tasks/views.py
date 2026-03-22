@@ -1,12 +1,17 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Task
 from django import forms
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+
 
 class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['title', 'description', 'completed']
 
+@login_required
 def task_list(request):
     tasks = Task.objects.all()
     return render(request, 'tasks/task_list.html', {'tasks': tasks})
@@ -37,5 +42,28 @@ def task_delete(request, id):
     task.delete()
     return redirect('task_list')
 
-# Create your views here.
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("login")
+    else:
+        form = UserCreationForm()
+    return render(request, "tasks/register.html", {"form":form})
+
+def user_login(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect("task_list")
+    else:
+        form = AuthenticationForm()
+    return render(request, "tasks/login.html", {"form": form})
+
+def user_logout(request):
+    logout(request)
+    return redirect("login")
 
